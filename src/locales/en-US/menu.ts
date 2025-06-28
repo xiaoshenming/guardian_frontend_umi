@@ -1,52 +1,76 @@
 export default {
-  'menu.welcome': 'Welcome',
-  'menu.more-blocks': 'More Blocks',
-  'menu.home': 'Home',
-  'menu.admin': 'Admin',
-  'menu.admin.sub-page': 'Sub-Page',
+  // User Authentication
   'menu.login': 'Login',
   'menu.register': 'Register',
-  'menu.register-result': 'Register Result',
+  'menu.forgot-password': 'Forgot Password',
+
+  // Main Features
   'menu.dashboard': 'Dashboard',
-  'menu.dashboard.analysis': 'Analysis',
-  'menu.dashboard.monitor': 'Monitor',
-  'menu.dashboard.workplace': 'Workplace',
+
+  // Guardian Circles Management
+  'menu.circles': 'Guardian Circles',
+  'menu.circles-list': 'Circle List',
+  'menu.circles-create': 'Create Circle',
+  'menu.circles-detail': 'Circle Details',
+  'menu.circles-members': 'Member Management',
+  'menu.circles-settings': 'Circle Settings',
+  // Nested format for circles
+  'menu.circles.circles-list': 'Circle List',
+  'menu.circles.circles-create': 'Create Circle',
+  'menu.circles.circles-detail': 'Circle Details',
+  'menu.circles.circles-members': 'Member Management',
+  'menu.circles.circles-settings': 'Circle Settings',
+
+  // Device Management
+  'menu.devices': 'Device Management',
+  'menu.devices-list': 'Device List',
+  'menu.devices-bind': 'Bind Device',
+  'menu.devices-detail': 'Device Details',
+  'menu.devices-monitor': 'Device Monitor',
+
+  // Event Monitoring
+  'menu.events': 'Event Monitoring',
+  'menu.events-list': 'Event List',
+  'menu.events-alerts': 'Alert Management',
+  'menu.events-detail': 'Event Details',
+  // Nested format for events
+  'menu.events.events-list': 'Event List',
+  'menu.events.events-alerts': 'Alert Management',
+  'menu.events.events-detail': 'Event Details',
+
+  // Data Analytics
+  'menu.analytics': 'Data Analytics',
+  'menu.analytics-overview': 'Data Overview',
+  'menu.analytics-reports': 'Analysis Reports',
+
+  // Profile Center
+  'menu.profile': 'Profile Center',
+  'menu.profile-info': 'Profile Info',
+  'menu.profile-security': 'Security Settings',
+  'menu.profile-notifications': 'Notification Settings',
+  // Nested format for profile
+  'menu.profile.profile-info': 'Profile Info',
+  'menu.profile.profile-security': 'Security Settings',
+  'menu.profile.profile-notifications': 'Notification Settings',
+
+  // User Management
+  'menu.users': 'User Management',
+
+  // System Administration
+  'menu.admin': 'System Administration',
+  'menu.admin-users': 'User Management',
+  'menu.admin-system': 'System Settings',
+  'menu.admin-settings': 'System Settings',
+  'menu.admin-logs': 'System Logs',
+  // Nested format for admin
+  'menu.admin.admin-settings': 'System Settings',
+  'menu.admin.admin-logs': 'System Logs',
+
+  // Common
+  'menu.home': 'Home',
+  'menu.help': 'Help',
   'menu.exception.403': '403',
   'menu.exception.404': '404',
   'menu.exception.500': '500',
-  'menu.form': 'Form',
-  'menu.form.basic-form': 'Basic Form',
-  'menu.form.step-form': 'Step Form',
-  'menu.form.step-form.info': 'Step Form(write transfer information)',
-  'menu.form.step-form.confirm': 'Step Form(confirm transfer information)',
-  'menu.form.step-form.result': 'Step Form(finished)',
-  'menu.form.advanced-form': 'Advanced Form',
-  'menu.list': 'List',
-  'menu.list.table-list': 'Search Table',
-  'menu.list.basic-list': 'Basic List',
-  'menu.list.card-list': 'Card List',
-  'menu.list.search-list': 'Search List',
-  'menu.list.search-list.articles': 'Search List(articles)',
-  'menu.list.search-list.projects': 'Search List(projects)',
-  'menu.list.search-list.applications': 'Search List(applications)',
-  'menu.profile': 'Profile',
-  'menu.profile.basic': 'Basic Profile',
-  'menu.profile.advanced': 'Advanced Profile',
-  'menu.result': 'Result',
-  'menu.result.success': 'Success',
-  'menu.result.fail': 'Fail',
-  'menu.exception': 'Exception',
-  'menu.exception.not-permission': '403',
-  'menu.exception.not-find': '404',
-  'menu.exception.server-error': '500',
-  'menu.exception.trigger': 'Trigger',
-  'menu.account': 'Account',
-  'menu.account.center': 'Account Center',
-  'menu.account.settings': 'Account Settings',
-  'menu.account.trigger': 'Trigger Error',
   'menu.account.logout': 'Logout',
-  'menu.editor': 'Graphic Editor',
-  'menu.editor.flow': 'Flow Editor',
-  'menu.editor.mind': 'Mind Editor',
-  'menu.editor.koni': 'Koni Editor',
 };
