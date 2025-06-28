@@ -19,6 +19,14 @@ interface ResponseStructure {
   showType?: ErrorShowType;
 }
 
+// 我们后端的实际响应格式
+interface BackendResponseStructure {
+  code: number;
+  message: string;
+  data: any;
+  error?: any;
+}
+
 /**
  * @name 错误处理
  * pro 自带的错误处理， 可以在这里做自己的改动
@@ -29,13 +37,31 @@ export const errorConfig: RequestConfig = {
   errorConfig: {
     // 错误抛出
     errorThrower: (res) => {
-      const { success, data, errorCode, errorMessage, showType } =
-        res as unknown as ResponseStructure;
-      if (!success) {
-        const error: any = new Error(errorMessage);
-        error.name = 'BizError';
-        error.info = { errorCode, errorMessage, showType, data };
-        throw error; // 抛出自制的错误
+      // 先尝试我们后端的响应格式
+      const backendRes = res as unknown as BackendResponseStructure;
+      if (backendRes.code !== undefined) {
+        // 这是我们后端的响应格式
+        if (backendRes.code !== 200) {
+          const error: any = new Error(backendRes.message);
+          error.name = 'BizError';
+          error.info = { 
+            errorCode: backendRes.code, 
+            errorMessage: backendRes.message, 
+            showType: ErrorShowType.ERROR_MESSAGE, 
+            data: backendRes.data 
+          };
+          throw error; // 抛出自制的错误
+        }
+      } else {
+        // 兼容原有的success格式
+        const { success, data, errorCode, errorMessage, showType } =
+          res as unknown as ResponseStructure;
+        if (!success) {
+          const error: any = new Error(errorMessage);
+          error.name = 'BizError';
+          error.info = { errorCode, errorMessage, showType, data };
+          throw error; // 抛出自制的错误
+        }
       }
     },
     // 错误接收及处理
@@ -112,8 +138,14 @@ export const errorConfig: RequestConfig = {
   responseInterceptors: [
     (response) => {
       // 拦截响应数据，进行个性化处理
-      const { data } = response as unknown as ResponseStructure;
-
+      const { data } = response;
+      
+      // 检查我们后端的响应格式
+      if (data?.code !== undefined && data.code !== 200) {
+        console.log('API请求失败:', data.message);
+      }
+      
+      // 兼容原有格式
       if (data?.success === false) {
         message.error('请求失败！');
       }

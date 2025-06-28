@@ -8,7 +8,7 @@ import React from 'react';
 import defaultSettings from '../config/defaultSettings';
 import { errorConfig } from './requestErrorConfig';
 import { authAPI, eventAPI } from './services/guardian/api';
-import type { User } from './services/guardian/api';
+import type { UserInfo } from './services/auth';
 import { AvatarDropdown, AvatarName, Footer, Question, SelectLang } from './components';
 import '@ant-design/v5-patch-for-react-19';
 
@@ -20,26 +20,33 @@ const loginPath = '/user/login';
  * */
 export async function getInitialState(): Promise<{
   settings?: Partial<LayoutSettings>;
-  currentUser?: User;
+  currentUser?: UserInfo;
   loading?: boolean;
   unhandledEventCount?: number;
-  fetchUserInfo?: () => Promise<User | undefined>;
+  fetchUserInfo?: () => Promise<UserInfo | undefined>;
   fetchUnhandledCount?: () => Promise<number>;
 }> {
   const fetchUserInfo = async () => {
     try {
       const response = await authAPI.getCurrentUser();
-      if (response.success && response.data) {
+      console.log('app.tsx fetchUserInfo响应:', response);
+      if (response.data) {
         return response.data;
       }
-    } catch (error) {
+      console.log('fetchUserInfo: 响应不成功或无数据');
+      return undefined;
+    } catch (error: any) {
       console.error('获取用户信息失败:', error);
-      // 如果token无效，跳转到登录页
-      if (!location.pathname.startsWith('/user')) {
-        history.push(loginPath);
+      // 检查是否是认证错误（401或403）
+      if (error.info?.errorCode === 401 || error.info?.errorCode === 403) {
+        console.log('认证失败，跳转到登录页');
+        // 如果token无效，跳转到登录页
+        if (!location.pathname.startsWith('/user')) {
+          history.push(loginPath);
+        }
       }
+      return undefined;
     }
-    return undefined;
   };
 
   const fetchUnhandledCount = async () => {
@@ -108,8 +115,10 @@ export const layout: RunTimeLayoutConfig = ({ initialState, setInitialState }) =
     footerRender: () => <Footer />,
     onPageChange: () => {
       const { location } = history;
+      console.log('页面变化:', location.pathname, '当前用户:', initialState?.currentUser);
       // 如果没有登录，重定向到 login
       if (!initialState?.currentUser && !location.pathname.startsWith('/user')) {
+        console.log('用户未登录，重定向到登录页');
         history.push(loginPath);
       }
     },

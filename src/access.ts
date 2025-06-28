@@ -1,9 +1,9 @@
 /**
  * @see https://umijs.org/docs/max/access#access
  * */
-import { User } from './services/guardian/api';
+import { UserInfo } from './services/auth';
 
-export default function access(initialState: { currentUser?: User } | undefined) {
+export default function access(initialState: { currentUser?: UserInfo } | undefined) {
   const { currentUser } = initialState ?? {};
   return {
     canAdmin: currentUser && currentUser.role === 'admin',

@@ -129,39 +129,49 @@ export const authAPI = {
     try {
       const response = await request('/api/user/info', {
         method: 'GET',
-        skipErrorHandler: true,
       });
       
-      // 转换后端响应格式为前端期望格式
-       if (response.code === 200) {
-         // 映射后端字段到前端期望的字段
-         const userData = response.data;
-         const mappedUserData: UserInfo = {
-           id: userData.id,
-           username: userData.username,
-           email: userData.email,
-           phone: userData.phone_number,
-           avatar: userData.avatar_url,
-           role: userData.role,
-           permissions: [], // 后端暂未返回权限信息，设为空数组
-           createdAt: userData.create_time,
-           updatedAt: userData.last_login_time || userData.create_time,
-         };
-         
-         return {
-           success: true,
-           data: mappedUserData,
-           message: response.message,
-           code: response.code,
-         };
-      } else {
-        return {
-          success: false,
-          data: null,
-          message: response.message || '获取用户信息失败',
-          code: response.code,
-        };
+      console.log('getCurrentUser API响应:', response);
+      
+      // 映射后端字段到前端期望的字段
+      const userData = response.data;
+      console.log('后端用户数据:', userData);
+      
+      // 将数字role转换为字符串role
+      let roleString: string;
+      switch (userData.role) {
+        case 1:
+          roleString = 'admin';
+          break;
+        case 2:
+          roleString = 'guardian';
+          break;
+        case 0:
+        default:
+          roleString = 'user';
+          break;
       }
+      
+      const mappedUserData: UserInfo = {
+        id: userData.id,
+        username: userData.username,
+        email: userData.email,
+        phone: userData.phone_number,
+        avatar: userData.avatar_url,
+        role: roleString,
+        permissions: [], // 后端暂未返回权限信息，设为空数组
+        createdAt: userData.create_time,
+        updatedAt: userData.last_login_time || userData.create_time,
+      };
+      
+      console.log('映射后的用户数据:', mappedUserData);
+      
+      return {
+        success: true,
+        data: mappedUserData,
+        message: response.message,
+        code: response.code,
+      };
     } catch (error: any) {
       return {
         success: false,

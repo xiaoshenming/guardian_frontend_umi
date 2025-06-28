@@ -108,14 +108,23 @@ const Login: React.FC = () => {
   const intl = useIntl();
 
   const fetchUserInfo = async () => {
-    const userInfo = await initialState?.fetchUserInfo?.();
-    if (userInfo) {
-      flushSync(() => {
-        setInitialState((s) => ({
-          ...s,
-          currentUser: userInfo,
-        }));
-      });
+    try {
+      const userInfo = await initialState?.fetchUserInfo?.();
+      if (userInfo) {
+        flushSync(() => {
+          setInitialState((s) => ({
+            ...s,
+            currentUser: userInfo,
+          }));
+        });
+        console.log('用户信息已更新:', userInfo);
+        return userInfo;
+      }
+      console.log('获取用户信息失败: userInfo为空');
+      return null;
+    } catch (error) {
+      console.error('获取用户信息异常:', error);
+      return null;
     }
   };
 
@@ -140,9 +149,23 @@ const Login: React.FC = () => {
           localStorage.setItem('guardian_token', response.data.token);
         }
 
-        await fetchUserInfo();
-        const urlParams = new URL(window.location.href).searchParams;
-        history.push(urlParams.get('redirect') || '/');
+        // 获取用户信息并更新状态
+        const userInfo = await fetchUserInfo();
+        
+        // 调试信息：检查用户状态
+        console.log('登录成功，当前用户状态:', initialState?.currentUser);
+        console.log('fetchUserInfo返回:', userInfo);
+        
+        // 确保用户信息获取成功后再跳转
+        if (userInfo) {
+          const urlParams = new URL(window.location.href).searchParams;
+          const redirectUrl = urlParams.get('redirect') || '/';
+          console.log('准备跳转到:', redirectUrl);
+          history.push(redirectUrl);
+        } else {
+          console.error('用户信息获取失败，无法跳转');
+          message.error('获取用户信息失败，请重新登录');
+        }
         return;
       }
 
