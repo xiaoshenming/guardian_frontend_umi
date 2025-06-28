@@ -90,13 +90,20 @@ export const errorConfig: RequestConfig = {
     (config: RequestOptions) => {
       // 拦截请求配置，进行个性化处理。
       // 从 localStorage 获取 token
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('guardian_token');
+      
+      // 设置默认请求头
+      config.headers = {
+        'Content-Type': 'application/json',
+        'devicetype': 'web', // 后端授权中间件需要的设备类型参数
+        ...config.headers,
+      };
+      
+      // 添加 Authorization 头
       if (token) {
-        config.headers = {
-          ...config.headers,
-          Authorization: `Bearer ${token}`,
-        };
+        config.headers.Authorization = `Bearer ${token}`;
       }
+      
       return config;
     },
   ],

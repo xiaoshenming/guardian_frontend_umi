@@ -69,10 +69,44 @@ export interface LoginResponse {
 export const authAPI = {
   // 用户登录
   login: async (params: LoginParams): Promise<ApiResponse<LoginResponse>> => {
-    return request('/api/auth/login', {
-      method: 'POST',
-      data: params,
-    });
+    try {
+      const response = await request('/api/auth/login', {
+        method: 'POST',
+        data: {
+          name: params.identifier, // 后端期望name参数
+          password: params.password,
+          deviceType: 'web'
+        },
+        skipErrorHandler: true, // 跳过默认错误处理
+      });
+      
+      // 转换后端响应格式为前端期望格式
+      return {
+        success: response.code === 200,
+        data: response.data,
+        message: response.message,
+        code: response.code
+      };
+    } catch (error: any) {
+      // 处理HTTP错误状态码
+      if (error.response) {
+        const errorData = error.response.data || error.data;
+        return {
+          success: false,
+          data: null,
+          message: errorData?.message || '登录失败',
+          code: errorData?.code || error.response.status
+        };
+      }
+      
+      // 处理网络错误等其他错误
+      return {
+        success: false,
+        data: null,
+        message: '网络错误，请稍后重试',
+        code: 500
+      };
+    }
   },
 
   // 用户注册
@@ -92,9 +126,50 @@ export const authAPI = {
 
   // 获取当前用户信息
   getCurrentUser: async (): Promise<ApiResponse<UserInfo>> => {
-    return request('/api/auth/me', {
-      method: 'GET',
-    });
+    try {
+      const response = await request('/api/user/info', {
+        method: 'GET',
+        skipErrorHandler: true,
+      });
+      
+      // 转换后端响应格式为前端期望格式
+       if (response.code === 200) {
+         // 映射后端字段到前端期望的字段
+         const userData = response.data;
+         const mappedUserData: UserInfo = {
+           id: userData.id,
+           username: userData.username,
+           email: userData.email,
+           phone: userData.phone_number,
+           avatar: userData.avatar_url,
+           role: userData.role,
+           permissions: [], // 后端暂未返回权限信息，设为空数组
+           createdAt: userData.create_time,
+           updatedAt: userData.last_login_time || userData.create_time,
+         };
+         
+         return {
+           success: true,
+           data: mappedUserData,
+           message: response.message,
+           code: response.code,
+         };
+      } else {
+        return {
+          success: false,
+          data: null,
+          message: response.message || '获取用户信息失败',
+          code: response.code,
+        };
+      }
+    } catch (error: any) {
+      return {
+        success: false,
+        data: null,
+        message: error.message || '获取用户信息失败',
+        code: error.status || 500,
+      };
+    }
   },
 
   // 刷新Token
