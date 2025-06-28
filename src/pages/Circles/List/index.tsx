@@ -228,12 +228,12 @@ const CircleList: React.FC = () => {
       {/* 统计卡片 */}
       <div style={{ marginBottom: 16 }}>
         <Card>
-          <Statistic.Group>
+          <div style={{ display: 'flex', justifyContent: 'space-around' }}>
             <Statistic title="总守护圈" value={0} loading />
             <Statistic title="活跃守护圈" value={0} loading />
             <Statistic title="总成员数" value={0} loading />
             <Statistic title="总设备数" value={0} loading />
-          </Statistic.Group>
+          </div>
         </Card>
       </div>
 
