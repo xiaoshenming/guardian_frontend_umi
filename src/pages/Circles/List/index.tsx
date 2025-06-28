@@ -100,79 +100,47 @@ const CircleList: React.FC = () => {
   const columns: ProColumns<GuardianCircle>[] = [
     {
       title: '守护圈名称',
-      dataIndex: 'name',
-      key: 'name',
+      dataIndex: 'circle_name',
+      key: 'circle_name',
       render: (text, record) => (
         <Space>
-          <Avatar
-            icon={getCircleTypeIcon(record.type)}
-            style={{ backgroundColor: getCircleTypeColor(record.type) }}
-          />
           <a onClick={() => handleView(record)}>{text}</a>
         </Space>
       ),
       width: 200,
     },
     {
-      title: '类型',
-      dataIndex: 'type',
-      key: 'type',
-      render: (type) => {
-        const typeMap = {
-          family: '家庭',
-          community: '社区',
-          enterprise: '企业',
+      title: '邀请码',
+      dataIndex: 'circle_code',
+      key: 'circle_code',
+      render: (code) => (
+        <Tag color="blue">{code}</Tag>
+      ),
+      width: 120,
+    },
+    {
+      title: '角色',
+      dataIndex: 'member_role',
+      key: 'member_role',
+      render: (role) => {
+        const roleMap = {
+          0: { text: '圈主', color: 'red' },
+          1: { text: '管理员', color: 'orange' },
+          2: { text: '成员', color: 'blue' },
         };
+        const roleInfo = roleMap[role as keyof typeof roleMap] || { text: '未知', color: 'default' };
         return (
-          <Tag color={getCircleTypeColor(type)} icon={getCircleTypeIcon(type)}>
-            {typeMap[type as keyof typeof typeMap] || type}
-          </Tag>
+          <Tag color={roleInfo.color}>{roleInfo.text}</Tag>
         );
       },
       width: 100,
-      filters: [
-        { text: '家庭', value: 'family' },
-        { text: '社区', value: 'community' },
-        { text: '企业', value: 'enterprise' },
-      ],
     },
     {
-      title: '状态',
-      dataIndex: 'status',
-      key: 'status',
-      render: (status) => (
-        <Badge
-          status={getStatusColor(status) as any}
-          text={status === 'active' ? '活跃' : '非活跃'}
-        />
-      ),
-      width: 100,
-      filters: [
-        { text: '活跃', value: 'active' },
-        { text: '非活跃', value: 'inactive' },
-      ],
-    },
-    {
-      title: '成员数量',
-      dataIndex: 'memberCount',
-      key: 'memberCount',
-      render: (count, record) => (
-        <Tooltip title="点击管理成员">
-          <Button type="link" icon={<TeamOutlined />} onClick={() => handleManageMembers(record)}>
-            {count}
-          </Button>
-        </Tooltip>
-      ),
-      width: 100,
-      sorter: true,
-    },
-    {
-      title: '设备数量',
-      dataIndex: 'deviceCount',
-      key: 'deviceCount',
-      render: (count) => <Badge count={count} showZero style={{ backgroundColor: '#52c41a' }} />,
-      width: 100,
-      sorter: true,
+      title: '创建者',
+      dataIndex: 'creator_name',
+      key: 'creator_name',
+      render: (name) => name || '未知',
+      width: 120,
     },
     {
       title: '描述',
@@ -184,8 +152,8 @@ const CircleList: React.FC = () => {
     },
     {
       title: '创建时间',
-      dataIndex: 'createdAt',
-      key: 'createdAt',
+      dataIndex: 'create_time',
+      key: 'create_time',
       render: (time) => new Date(time).toLocaleString(),
       width: 160,
       sorter: true,
@@ -259,16 +227,14 @@ const CircleList: React.FC = () => {
             const response = await circleAPI.getCircles({
               page: params.current,
               pageSize: params.pageSize,
-              keyword: params.name,
-              type: filter.type?.[0],
-              status: filter.status?.[0],
+              keyword: params.circle_name,
             });
 
             if (response.success) {
               return {
-                data: response.data.list,
+                data: response.data || [],
                 success: true,
-                total: response.data.total,
+                total: response.data?.length || 0,
               };
             }
             return {
@@ -277,6 +243,7 @@ const CircleList: React.FC = () => {
               total: 0,
             };
           } catch (error) {
+            console.error('获取守护圈列表失败:', error);
             return {
               data: [],
               success: false,

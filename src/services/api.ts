@@ -333,7 +333,7 @@ export const circleAPI = {
     status?: string;
     keyword?: string;
   }): Promise<ApiResponse<{ list: GuardianCircle[]; total: number }>> => {
-    return request('/api/circles', {
+    return request('/api/circle/list', {
       method: 'GET',
       params,
     });
@@ -341,14 +341,14 @@ export const circleAPI = {
 
   // 获取守护圈详情
   getCircle: async (id: number): Promise<ApiResponse<GuardianCircle>> => {
-    return request(`/api/circles/${id}`, {
+    return request(`/api/circle/${id}`, {
       method: 'GET',
     });
   },
 
   // 创建守护圈
   createCircle: async (data: Partial<GuardianCircle>): Promise<ApiResponse<GuardianCircle>> => {
-    return request('/api/circles', {
+    return request('/api/circle/create', {
       method: 'POST',
       data,
     });
@@ -359,7 +359,7 @@ export const circleAPI = {
     id: number,
     data: Partial<GuardianCircle>,
   ): Promise<ApiResponse<GuardianCircle>> => {
-    return request(`/api/circles/${id}`, {
+    return request(`/api/circle/${id}`, {
       method: 'PUT',
       data,
     });
@@ -367,24 +367,21 @@ export const circleAPI = {
 
   // 删除守护圈
   deleteCircle: async (id: number): Promise<ApiResponse> => {
-    return request(`/api/circles/${id}`, {
+    return request(`/api/circle/${id}`, {
       method: 'DELETE',
     });
   },
 
   // 获取守护圈成员
   getCircleMembers: async (circleId: number): Promise<ApiResponse<CircleMember[]>> => {
-    return request(`/api/circles/${circleId}/members`, {
+    return request(`/api/circle/${circleId}/members`, {
       method: 'GET',
     });
   },
 
-  // 邀请成员
-  inviteMember: async (
-    circleId: number,
-    data: { email: string; role: string },
-  ): Promise<ApiResponse> => {
-    return request(`/api/circles/${circleId}/invite`, {
+  // 邀请成员 - 通过邀请码加入
+  joinCircle: async (data: { circleCode: string; memberAlias?: string }): Promise<ApiResponse> => {
+    return request('/api/circle/join', {
       method: 'POST',
       data,
     });
@@ -392,7 +389,7 @@ export const circleAPI = {
 
   // 移除成员
   removeMember: async (circleId: number, memberId: number): Promise<ApiResponse> => {
-    return request(`/api/circles/${circleId}/members/${memberId}`, {
+    return request(`/api/circle/${circleId}/members/${memberId}`, {
       method: 'DELETE',
     });
   },

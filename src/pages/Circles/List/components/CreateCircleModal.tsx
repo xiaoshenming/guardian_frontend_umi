@@ -23,16 +23,9 @@ const CreateCircleModal: React.FC<CreateCircleModalProps> = ({ visible, onCancel
       const values = await form.validateFields();
       setLoading(true);
 
-      const circleData: Partial<GuardianCircle> = {
-        name: values.name,
+      const circleData = {
+        circleName: values.name,
         description: values.description,
-        type: values.type,
-        status: 'active',
-        settings: {
-          autoAlert: values.autoAlert || false,
-          alertThreshold: values.alertThreshold || 5,
-          emergencyContacts: values.emergencyContacts || [],
-        },
       };
 
       const response = await circleAPI.createCircle(circleData);
@@ -91,7 +84,7 @@ const CreateCircleModal: React.FC<CreateCircleModalProps> = ({ visible, onCancel
       onCancel={handleCancel}
       confirmLoading={loading}
       width={600}
-      destroyOnClose
+      destroyOnHidden
     >
       <Form
         form={form}

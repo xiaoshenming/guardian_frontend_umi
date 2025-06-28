@@ -28,13 +28,8 @@ const EditCircleModal: React.FC<EditCircleModalProps> = ({
   useEffect(() => {
     if (visible && record) {
       form.setFieldsValue({
-        name: record.name,
+        name: record.circle_name,
         description: record.description,
-        type: record.type,
-        status: record.status,
-        autoAlert: record.settings?.autoAlert || false,
-        alertThreshold: record.settings?.alertThreshold || 5,
-        emergencyContacts: record.settings?.emergencyContacts?.join(', ') || '',
       });
     }
   }, [visible, record, form]);
@@ -46,21 +41,9 @@ const EditCircleModal: React.FC<EditCircleModalProps> = ({
       const values = await form.validateFields();
       setLoading(true);
 
-      const updateData: Partial<GuardianCircle> = {
-        name: values.name,
+      const updateData = {
+        circleName: values.name,
         description: values.description,
-        type: values.type,
-        status: values.status,
-        settings: {
-          autoAlert: values.autoAlert || false,
-          alertThreshold: values.alertThreshold || 5,
-          emergencyContacts: values.emergencyContacts
-            ? values.emergencyContacts
-                .split(',')
-                .map((email: string) => email.trim())
-                .filter(Boolean)
-            : [],
-        },
       };
 
       const response = await circleAPI.updateCircle(record.id, updateData);
