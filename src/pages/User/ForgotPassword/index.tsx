@@ -68,7 +68,7 @@ const ForgotPassword: React.FC = () => {
         contact: type === 'email' ? values.email : values.phone,
       });
 
-      if (response.success) {
+      if (response.code === 200) {
         message.success('验证码发送成功！');
         setResetToken(response.data.token);
         setStep(2);
@@ -92,7 +92,7 @@ const ForgotPassword: React.FC = () => {
         newPassword: values.password,
       });
 
-      if (response.success) {
+      if (response.code === 200) {
         message.success('密码重置成功！');
         history.push('/user/login');
       } else {

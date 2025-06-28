@@ -218,10 +218,9 @@ const Logs: React.FC = () => {
   const handleDelete = async (ids: React.Key[]) => {
     try {
       const response = await systemAPI.deleteLogs(ids as string[]);
-      if (response.success) {
-        message.success(`成功删除 ${ids.length} 条日志`);
+      if (response.code === 200) {
+        message.success('日志删除成功！');
         actionRef.current?.reload();
-        setSelectedRowKeys([]);
       } else {
         message.error(response.message || '删除失败');
       }
@@ -258,12 +257,11 @@ const Logs: React.FC = () => {
       onOk: async () => {
         try {
           const response = await systemAPI.clearLogs();
-          if (response.success) {
-            message.success('日志清空成功');
+          if (response.code === 200) {
+            message.success('日志清理成功！');
             actionRef.current?.reload();
-            setSelectedRowKeys([]);
           } else {
-            message.error(response.message || '清空失败');
+            message.error(response.message || '清理失败');
           }
         } catch (error) {
           message.error('清空失败，请稍后重试');
@@ -277,7 +275,7 @@ const Logs: React.FC = () => {
     try {
       setExportLoading(true);
       const response = await systemAPI.exportLogs();
-      if (response.success) {
+      if (response.code === 200) {
         // 创建下载链接
         const url = window.URL.createObjectURL(new Blob([response.data]));
         const link = document.createElement('a');
@@ -315,11 +313,11 @@ const Logs: React.FC = () => {
         sorter: params.sorter,
       });
 
-      if (response.success) {
+      if (response.code === 200) {
         return {
-          data: response.data.list,
+          data: response.data?.logs || [],
+          total: response.data?.total || 0,
           success: true,
-          total: response.data.total,
         };
       } else {
         message.error(response.message || '获取日志列表失败');

@@ -79,7 +79,7 @@ const DeviceList: React.FC = () => {
   const handleDelete = async (record: Device) => {
     try {
       const response = await deviceAPI.deleteDevice(record.id);
-      if (response.success) {
+      if (response.code === 200) {
         message.success('删除成功！');
         actionRef.current?.reload();
       } else {
@@ -99,7 +99,7 @@ const DeviceList: React.FC = () => {
 
     try {
       const response = await deviceAPI.batchDelete(selectedRowKeys as number[]);
-      if (response.success) {
+      if (response.code === 200) {
         message.success('批量删除成功！');
         setSelectedRowKeys([]);
         actionRef.current?.reload();
@@ -118,7 +118,7 @@ const DeviceList: React.FC = () => {
         ...record,
         enabled,
       });
-      if (response.success) {
+      if (response.code === 200) {
         message.success(`设备已${enabled ? '启用' : '禁用'}`);
         actionRef.current?.reload();
       } else {
@@ -368,7 +368,7 @@ const DeviceList: React.FC = () => {
               status: filter.status?.[0],
             });
 
-            if (response.success) {
+            if (response.code === 200) {
               return {
                 data: response.data.list,
                 success: true,

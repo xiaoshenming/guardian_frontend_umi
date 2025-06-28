@@ -107,8 +107,8 @@ const EditDeviceModal: React.FC<EditDeviceModalProps> = ({
         },
       });
 
-      if (response.success) {
-        message.success('设备更新成功！');
+      if (response.code === 200) {
+        message.success('设备信息更新成功！');
         onSuccess();
       } else {
         message.error(response.message || '更新失败');

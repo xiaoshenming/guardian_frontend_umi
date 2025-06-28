@@ -357,7 +357,7 @@ export const circleAPI = {
   // 更新守护圈
   updateCircle: async (
     id: number,
-    data: Partial<GuardianCircle>,
+    data: Partial<CreateCircleParams>,
   ): Promise<ApiResponse<GuardianCircle>> => {
     return request(`/api/circle/${id}`, {
       method: 'PUT',

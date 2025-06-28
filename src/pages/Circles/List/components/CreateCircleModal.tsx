@@ -30,7 +30,7 @@ const CreateCircleModal: React.FC<CreateCircleModalProps> = ({ visible, onCancel
 
       const response = await circleAPI.createCircle(circleData);
 
-      if (response.success) {
+      if (response.code === 200) {
         message.success('守护圈创建成功！');
         form.resetFields();
         onSuccess();

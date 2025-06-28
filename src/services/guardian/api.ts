@@ -2,10 +2,10 @@ import { request } from '@umijs/max';
 
 // 基础响应类型
 interface BaseResponse<T = any> {
-  success: boolean;
+  code: number;
   message: string;
-  data?: T;
-  code?: number;
+  data: T;
+  error: any;
 }
 
 // 用户相关类型
@@ -36,19 +36,21 @@ interface RegisterParams {
 
 // 守护圈相关类型
 interface Circle {
-  id: string;
-  name: string;
+  id: number;
+  circle_name: string;
   description?: string;
-  inviteCode: string;
-  creatorId: string;
-  memberCount: number;
-  deviceCount: number;
-  createdAt: string;
-  updatedAt: string;
+  circle_code: string;
+  creator_uid: number;
+  creator_name?: string;
+  member_role: number;
+  member_alias?: string;
+  alert_level?: number;
+  create_time: string;
+  update_time?: string;
 }
 
 interface CreateCircleParams {
-  name: string;
+  circleName: string;
   description?: string;
 }
 

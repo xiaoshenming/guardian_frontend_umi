@@ -72,7 +72,7 @@ const UserList: React.FC = () => {
   const handleDelete = async (record: User) => {
     try {
       const response = await systemAPI.deleteUser(record.id);
-      if (response.success) {
+      if (response.code === 200) {
         message.success('删除成功！');
         actionRef.current?.reload();
       } else {
@@ -92,7 +92,7 @@ const UserList: React.FC = () => {
 
     try {
       const response = await systemAPI.batchDeleteUsers(selectedRowKeys as number[]);
-      if (response.success) {
+      if (response.code === 200) {
         message.success('批量删除成功！');
         setSelectedRowKeys([]);
         actionRef.current?.reload();
@@ -111,7 +111,7 @@ const UserList: React.FC = () => {
         ...record,
         status: active ? 'active' : 'inactive',
       });
-      if (response.success) {
+      if (response.code === 200) {
         message.success(`用户已${active ? '激活' : '禁用'}`);
         actionRef.current?.reload();
       } else {
@@ -351,7 +351,7 @@ const UserList: React.FC = () => {
               status: filter.status?.[0],
             });
 
-            if (response.success) {
+            if (response.code === 200) {
               return {
                 data: response.data.list,
                 success: true,

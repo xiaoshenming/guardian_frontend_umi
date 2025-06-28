@@ -98,7 +98,7 @@ const Analytics: React.FC = () => {
         endTime: timeRange[1].format('YYYY-MM-DD'),
       });
 
-      if (response.success) {
+      if (response.code === 200) {
         setData(response.data);
       }
     } catch (error) {
@@ -128,7 +128,7 @@ const Analytics: React.FC = () => {
         endTime: timeRange[1].format('YYYY-MM-DD'),
       });
 
-      if (response.success) {
+      if (response.code === 200) {
         // 创建下载链接
         const url = window.URL.createObjectURL(new Blob([response.data]));
         const link = document.createElement('a');

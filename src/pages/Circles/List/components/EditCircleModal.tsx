@@ -48,7 +48,7 @@ const EditCircleModal: React.FC<EditCircleModalProps> = ({
 
       const response = await circleAPI.updateCircle(record.id, updateData);
 
-      if (response.success) {
+      if (response.code === 200) {
         message.success('守护圈更新成功！');
         onSuccess();
       } else {

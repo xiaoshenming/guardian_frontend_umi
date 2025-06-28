@@ -76,7 +76,7 @@ const Register: React.FC = () => {
 
       const response = await authAPI.register(registerData);
 
-      if (response.success) {
+      if (response.code === 200) {
         message.success('注册成功！');
         history.push('/user/login');
       } else {

@@ -36,7 +36,7 @@ const CreateUserModal: React.FC<CreateUserModalProps> = ({ visible, onCancel, on
         avatar: avatarUrl,
       });
 
-      if (response.success) {
+      if (response.code === 200) {
         message.success('用户创建成功！');
         form.resetFields();
         setAvatarUrl('');

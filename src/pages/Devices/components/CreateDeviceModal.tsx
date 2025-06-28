@@ -79,7 +79,7 @@ const CreateDeviceModal: React.FC<CreateDeviceModalProps> = ({ visible, onCancel
         },
       });
 
-      if (response.success) {
+      if (response.code === 200) {
         message.success('设备创建成功！');
         form.resetFields();
         onSuccess();

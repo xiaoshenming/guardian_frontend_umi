@@ -52,7 +52,7 @@ export async function getInitialState(): Promise<{
   const fetchUnhandledCount = async () => {
     try {
       const response = await eventAPI.getUnhandledCount();
-      if (response.success && response.data) {
+      if (response.code === 200 && response.data) {
         return response.data.count;
       }
     } catch (error) {

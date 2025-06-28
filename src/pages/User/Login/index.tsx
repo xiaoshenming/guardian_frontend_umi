@@ -137,7 +137,7 @@ const Login: React.FC = () => {
         remember: values.remember,
       });
 
-      if (response.success && response.data) {
+      if (response.code === 200 && response.data) {
         const defaultLoginSuccessMessage = intl.formatMessage({
           id: 'pages.login.success',
           defaultMessage: '登录成功！',

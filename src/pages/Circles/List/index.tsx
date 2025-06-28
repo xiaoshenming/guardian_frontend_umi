@@ -65,7 +65,7 @@ const CircleList: React.FC = () => {
   const handleDelete = async (id: number) => {
     try {
       const response = await circleAPI.deleteCircle(id);
-      if (response.success) {
+      if (response.code === 200) {
         message.success('删除成功');
         actionRef.current?.reload();
       } else {
@@ -224,13 +224,9 @@ const CircleList: React.FC = () => {
         ]}
         request={async (params, sort, filter) => {
           try {
-            const response = await circleAPI.getCircles({
-              page: params.current,
-              pageSize: params.pageSize,
-              keyword: params.circle_name,
-            });
+            const response = await circleAPI.getCircles();
 
-            if (response.success) {
+            if (response.code === 200) {
               return {
                 data: response.data || [],
                 success: true,

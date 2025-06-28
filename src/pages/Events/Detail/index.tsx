@@ -56,11 +56,11 @@ const EventDetail: React.FC = () => {
         eventAPI.getEventLogs(parseInt(id)),
       ]);
 
-      if (eventResponse.success) {
+      if (eventResponse.code === 200) {
         setEvent(eventResponse.data);
       }
 
-      if (logsResponse.success) {
+      if (logsResponse.code === 200) {
         setLogs(logsResponse.data);
       }
     } catch (error) {
@@ -119,7 +119,7 @@ const EventDetail: React.FC = () => {
         note: values.note,
       });
 
-      if (response.success) {
+      if (response.code === 200) {
         message.success('事件处理成功！');
         setHandleModalVisible(false);
         form.resetFields();

@@ -93,7 +93,7 @@ const EventList: React.FC = () => {
         note: values.note,
       });
 
-      if (response.success) {
+      if (response.code === 200) {
         message.success('事件处理成功！');
         setHandleModalVisible(false);
         form.resetFields();
@@ -120,7 +120,7 @@ const EventList: React.FC = () => {
     try {
       const response = await eventAPI.batchHandle(selectedRowKeys as number[], { status });
 
-      if (response.success) {
+      if (response.code === 200) {
         message.success(`批量${status === 'resolved' ? '解决' : '忽略'}成功！`);
         setSelectedRowKeys([]);
         actionRef.current?.reload();
@@ -334,11 +334,11 @@ const EventList: React.FC = () => {
               status: filter.status?.[0],
             });
 
-            if (response.success) {
+            if (response.code === 200) {
               return {
-                data: response.data.list,
+                data: response.data?.events || [],
+                total: response.data?.total || 0,
                 success: true,
-                total: response.data.total,
               };
             }
             return {

@@ -91,7 +91,7 @@ const Settings: React.FC = () => {
           : undefined,
       });
 
-      if (response.success) {
+      if (response.code === 200) {
         message.success('设置保存成功！');
         fetchSettings();
       } else {
@@ -147,7 +147,7 @@ const Settings: React.FC = () => {
         smtpSecure: values.smtpSecure,
       });
 
-      if (response.success) {
+      if (response.code === 200) {
         message.success('邮件发送测试成功！');
       } else {
         message.error(response.message || '邮件发送测试失败');

@@ -56,8 +56,8 @@ const EditUserModal: React.FC<EditUserModalProps> = ({ visible, record, onCancel
         ...(values.password && { password: values.password }),
       });
 
-      if (response.success) {
-        message.success('用户更新成功！');
+      if (response.code === 200) {
+        message.success('用户信息更新成功！');
         onSuccess();
       } else {
         message.error(response.message || '更新失败');

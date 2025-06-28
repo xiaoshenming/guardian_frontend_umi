@@ -46,12 +46,11 @@ const Dashboard: React.FC = () => {
         eventAPI.getEvents({ page: 1, pageSize: 10, status: 'pending' }),
       ]);
 
-      if (statsResponse.success) {
+      if (statsResponse.code === 200) {
         setStats(statsResponse.data);
       }
-
-      if (eventsResponse.success) {
-        setRecentEvents(eventsResponse.data.list);
+      if (eventsResponse.code === 200) {
+        setRecentEvents(eventsResponse.data);
       }
     } catch (error) {
       console.error('Failed to fetch dashboard data:', error);
