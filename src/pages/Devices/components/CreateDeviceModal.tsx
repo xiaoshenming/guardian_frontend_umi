@@ -1,7 +1,9 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Modal, Form, Input, Select, Switch, InputNumber, message, Row, Col } from 'antd';
 import { deviceAPI, circleAPI } from '@/services/api';
 import type { Circle, Location } from '@/services/api';
+import { deviceNameRules, deviceSerialRules, descriptionRules, requiredRules } from '@/utils/validation';
+import { requestWrapper } from '@/utils/request';
 
 const { Option } = Select;
 const { TextArea } = Input;
@@ -60,37 +62,39 @@ const CreateDeviceModal: React.FC<CreateDeviceModalProps> = ({ visible, onCancel
       setLoading(true);
       const values = await form.validateFields();
 
-      const response = await deviceAPI.createDevice({
-        name: values.name,
-        deviceId: values.deviceId,
-        type: values.type,
-        model: values.model,
-        manufacturer: values.manufacturer,
-        description: values.description,
-        locationId: values.locationId,
-        circleId: values.circleId,
-        enabled: values.enabled ?? true,
-        config: {
-          ip: values.ip,
-          port: values.port,
-          username: values.username,
-          password: values.password,
-          ...values.config,
-        },
-      });
-
-      if (response.code === 200) {
-        message.success('设备创建成功！');
-        form.resetFields();
-        onSuccess();
-      } else {
-        message.error(response.message || '创建失败');
-      }
+      await requestWrapper(
+        () => deviceAPI.createDevice({
+          name: values.name,
+          deviceId: values.deviceId,
+          type: values.type,
+          model: values.model || '',
+          manufacturer: values.manufacturer || '',
+          description: values.description || '',
+          locationId: values.locationId,
+          circleId: values.circleId,
+          enabled: values.enabled ?? true,
+          config: {
+            ip: values.ip || '',
+            port: values.port || 0,
+            username: values.username || '',
+            password: values.password || '',
+            ...values.config,
+          },
+        }),
+        {
+          successMessage: '设备创建成功！',
+          showSuccessMessage: true,
+          onSuccess: () => {
+            form.resetFields();
+            onSuccess();
+          },
+        }
+      );
     } catch (error: any) {
       if (error.errorFields) {
+        // 表单验证错误，不需要处理
         return;
       }
-      message.error(error.message || '创建失败，请稍后重试');
     } finally {
       setLoading(false);
     }
@@ -124,10 +128,7 @@ const CreateDeviceModal: React.FC<CreateDeviceModalProps> = ({ visible, onCancel
             <Form.Item
               name="name"
               label="设备名称"
-              rules={[
-                { required: true, message: '请输入设备名称' },
-                { max: 50, message: '设备名称不能超过50个字符' },
-              ]}
+              rules={deviceNameRules}
             >
               <Input placeholder="请输入设备名称" />
             </Form.Item>
@@ -136,10 +137,7 @@ const CreateDeviceModal: React.FC<CreateDeviceModalProps> = ({ visible, onCancel
             <Form.Item
               name="deviceId"
               label="设备ID"
-              rules={[
-                { required: true, message: '请输入设备ID' },
-                { max: 50, message: '设备ID不能超过50个字符' },
-              ]}
+              rules={deviceSerialRules}
             >
               <Input placeholder="请输入设备唯一标识" />
             </Form.Item>
@@ -151,7 +149,7 @@ const CreateDeviceModal: React.FC<CreateDeviceModalProps> = ({ visible, onCancel
             <Form.Item
               name="type"
               label="设备类型"
-              rules={[{ required: true, message: '请选择设备类型' }]}
+              rules={requiredRules('设备类型')}
             >
               <Select placeholder="请选择设备类型">
                 <Option value="camera">摄像头</Option>
@@ -196,7 +194,7 @@ const CreateDeviceModal: React.FC<CreateDeviceModalProps> = ({ visible, onCancel
             <Form.Item
               name="locationId"
               label="安装位置"
-              rules={[{ required: true, message: '请选择安装位置' }]}
+              rules={requiredRules('安装位置')}
             >
               <Select placeholder="请选择安装位置">
                 {locations.map((location) => (
@@ -211,7 +209,7 @@ const CreateDeviceModal: React.FC<CreateDeviceModalProps> = ({ visible, onCancel
             <Form.Item
               name="circleId"
               label="所属守护圈"
-              rules={[{ required: true, message: '请选择所属守护圈' }]}
+              rules={requiredRules('所属守护圈')}
             >
               <Select placeholder="请选择所属守护圈">
                 {circles.map((circle) => (
@@ -227,9 +225,9 @@ const CreateDeviceModal: React.FC<CreateDeviceModalProps> = ({ visible, onCancel
         <Form.Item
           name="description"
           label="设备描述"
-          rules={[{ max: 200, message: '描述不能超过200个字符' }]}
+          rules={descriptionRules}
         >
-          <TextArea rows={3} placeholder="请输入设备描述" showCount maxLength={200} />
+          <TextArea rows={3} placeholder="请输入设备描述" showCount maxLength={500} />
         </Form.Item>
 
         {/* 网络配置 */}

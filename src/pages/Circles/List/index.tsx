@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   Button,
   Tag,
@@ -27,6 +27,8 @@ import { PageContainer, ProTable } from '@ant-design/pro-components';
 import { history } from '@umijs/max';
 import { circleAPI } from '@/services/api';
 import type { GuardianCircle } from '@/services/api';
+import { requestWrapper } from '@/utils/request';
+import { showDeleteConfirm } from '@/components/ConfirmDialog';
 import CreateCircleModal from './components/CreateCircleModal';
 import EditCircleModal from './components/EditCircleModal';
 
@@ -62,18 +64,23 @@ const CircleList: React.FC = () => {
   };
 
   // 删除守护圈
-  const handleDelete = async (id: number) => {
-    try {
-      const response = await circleAPI.deleteCircle(id);
-      if (response.code === 200) {
-        message.success('删除成功');
-        actionRef.current?.reload();
-      } else {
-        message.error(response.message || '删除失败');
-      }
-    } catch (error) {
-      message.error('删除失败');
-    }
+  const handleDelete = async (record: GuardianCircle) => {
+    showDeleteConfirm({
+      title: '确认删除守护圈',
+      content: `确定要删除守护圈 "${record.circle_name}" 吗？删除后无法恢复，且会影响相关设备和成员。`,
+      onConfirm: async () => {
+        await requestWrapper(
+          () => circleAPI.deleteCircle(record.id),
+          {
+            successMessage: '守护圈删除成功！',
+            showSuccessMessage: true,
+            onSuccess: () => {
+              actionRef.current?.reload();
+            },
+          }
+        );
+      },
+    });
   };
 
   // 编辑守护圈
@@ -175,17 +182,9 @@ const CircleList: React.FC = () => {
           <Tooltip title="设置">
             <Button type="link" icon={<SettingOutlined />} onClick={() => handleSettings(record)} />
           </Tooltip>
-          <Popconfirm
-            title="确定要删除这个守护圈吗？"
-            description="删除后将无法恢复，请谨慎操作。"
-            onConfirm={() => handleDelete(record.id)}
-            okText="确定"
-            cancelText="取消"
-          >
-            <Tooltip title="删除">
-              <Button type="link" danger icon={<DeleteOutlined />} />
-            </Tooltip>
-          </Popconfirm>
+          <Tooltip title="删除">
+            <Button type="link" danger icon={<DeleteOutlined />} onClick={() => handleDelete(record)} />
+          </Tooltip>
         </Space>
       ),
     },

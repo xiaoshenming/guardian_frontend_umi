@@ -221,20 +221,25 @@ export interface AnalyticsData {
 // 守护圈相关接口
 export interface GuardianCircle {
   id: number;
-  name: string;
+  circle_name: string;
   description?: string;
-  type: 'family' | 'community' | 'enterprise';
-  status: 'active' | 'inactive';
-  memberCount: number;
-  deviceCount: number;
-  createdBy: number;
-  createdAt: string;
-  updatedAt: string;
-  settings: {
-    autoAlert: boolean;
-    alertThreshold: number;
-    emergencyContacts: string[];
-  };
+  circle_code: string;
+  creator_uid: number;
+  creator_name?: string;
+  member_role: number;
+  member_alias?: string;
+  alert_level?: number;
+  create_time: string;
+  update_time: string;
+  // 兼容旧字段
+  name?: string;
+  type?: 'family' | 'community' | 'enterprise';
+  status?: 'active' | 'inactive';
+  memberCount?: number;
+  deviceCount?: number;
+  createdBy?: number;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 // 守护圈成员接口

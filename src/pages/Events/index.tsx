@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   Button,
   Tag,
@@ -31,6 +31,8 @@ import { PageContainer, ProTable } from '@ant-design/pro-components';
 import { history } from '@umijs/max';
 import { eventAPI } from '@/services/api';
 import type { SecurityEvent } from '@/services/api';
+import { requestWrapper } from '@/utils/request';
+import { requiredRules, descriptionRules } from '@/utils/validation';
 
 const { TextArea } = Input;
 const { Option } = Select;
@@ -88,25 +90,28 @@ const EventList: React.FC = () => {
 
     try {
       const values = await form.validateFields();
-      const response = await eventAPI.handleEvent(currentRecord.id, {
-        status: values.status,
-        note: values.note,
-      });
-
-      if (response.code === 200) {
-        message.success('事件处理成功！');
-        setHandleModalVisible(false);
-        form.resetFields();
-        setCurrentRecord(null);
-        actionRef.current?.reload();
-      } else {
-        message.error(response.message || '处理失败');
-      }
+      
+      await requestWrapper(
+        () => eventAPI.handleEvent(currentRecord.id, {
+          status: values.status,
+          note: values.note || '',
+        }),
+        {
+          successMessage: '事件处理成功！',
+          showSuccessMessage: true,
+          onSuccess: () => {
+            setHandleModalVisible(false);
+            form.resetFields();
+            setCurrentRecord(null);
+            actionRef.current?.reload();
+          },
+        }
+      );
     } catch (error: any) {
       if (error.errorFields) {
+        // 表单验证错误，不需要处理
         return;
       }
-      message.error(error.message || '处理失败，请稍后重试');
     }
   };
 
@@ -379,7 +384,7 @@ const EventList: React.FC = () => {
           <Form.Item
             name="status"
             label="处理状态"
-            rules={[{ required: true, message: '请选择处理状态' }]}
+            rules={requiredRules('处理状态')}
           >
             <Select placeholder="请选择处理状态">
               <Option value="processing">处理中</Option>
@@ -390,7 +395,7 @@ const EventList: React.FC = () => {
           <Form.Item
             name="note"
             label="处理备注"
-            rules={[{ required: true, message: '请输入处理备注' }]}
+            rules={descriptionRules}
           >
             <TextArea rows={4} placeholder="请输入处理备注" showCount maxLength={500} />
           </Form.Item>

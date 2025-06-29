@@ -3,6 +3,8 @@ import { Modal, Form, Input, Select, Switch, InputNumber, message, Space, Typogr
 import { HomeOutlined, BankOutlined, ShopOutlined } from '@ant-design/icons';
 import { circleAPI } from '@/services/api';
 import type { GuardianCircle } from '@/services/api';
+import { circleNameRules, descriptionRules } from '@/utils/validation';
+import { requestWrapper } from '@/utils/request';
 
 const { TextArea } = Input;
 const { Option } = Select;
@@ -43,24 +45,24 @@ const EditCircleModal: React.FC<EditCircleModalProps> = ({
 
       const updateData = {
         circleName: values.name,
-        description: values.description,
+        description: values.description || '',
       };
 
-      const response = await circleAPI.updateCircle(record.id, updateData);
-
-      if (response.code === 200) {
-        message.success('守护圈更新成功！');
-        onSuccess();
-      } else {
-        message.error(response.message || '更新失败');
-      }
+      await requestWrapper(
+        () => circleAPI.updateCircle(record.id, updateData),
+        {
+          successMessage: '守护圈更新成功！',
+          showSuccessMessage: true,
+          onSuccess: () => {
+            onSuccess();
+          },
+        }
+      );
     } catch (error: any) {
-      console.error('Update circle error:', error);
       if (error.errorFields) {
-        // 表单验证错误
+        // 表单验证错误，不需要处理
         return;
       }
-      message.error(error.message || '更新失败，请稍后重试');
     } finally {
       setLoading(false);
     }
@@ -113,11 +115,7 @@ const EditCircleModal: React.FC<EditCircleModalProps> = ({
         <Form.Item
           name="name"
           label="守护圈名称"
-          rules={[
-            { required: true, message: '请输入守护圈名称' },
-            { min: 2, message: '名称至少2个字符' },
-            { max: 50, message: '名称最多50个字符' },
-          ]}
+          rules={circleNameRules}
         >
           <Input placeholder="请输入守护圈名称" />
         </Form.Item>
@@ -157,9 +155,9 @@ const EditCircleModal: React.FC<EditCircleModalProps> = ({
         <Form.Item
           name="description"
           label="描述"
-          rules={[{ max: 200, message: '描述最多200个字符' }]}
+          rules={descriptionRules}
         >
-          <TextArea rows={3} placeholder="请输入守护圈描述（可选）" showCount maxLength={200} />
+          <TextArea rows={3} placeholder="请输入守护圈描述（可选）" showCount maxLength={500} />
         </Form.Item>
 
         <Form.Item

@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   Button,
   Tag,
@@ -33,6 +33,8 @@ import { PageContainer, ProTable } from '@ant-design/pro-components';
 import { history } from '@umijs/max';
 import { deviceAPI } from '@/services/api';
 import type { Device } from '@/services/api';
+import { requestWrapper, batchRequestWrapper } from '@/utils/request';
+import { showDeleteConfirm } from '@/components/ConfirmDialog';
 import CreateDeviceModal from './components/CreateDeviceModal';
 import EditDeviceModal from './components/EditDeviceModal';
 
@@ -77,17 +79,22 @@ const DeviceList: React.FC = () => {
 
   // 删除设备
   const handleDelete = async (record: Device) => {
-    try {
-      const response = await deviceAPI.deleteDevice(record.id);
-      if (response.code === 200) {
-        message.success('删除成功！');
-        actionRef.current?.reload();
-      } else {
-        message.error(response.message || '删除失败');
-      }
-    } catch (error) {
-      message.error('删除失败');
-    }
+    showDeleteConfirm({
+      title: '确认删除设备',
+      content: `确定要删除设备 "${record.device_name}" 吗？删除后无法恢复。`,
+      onConfirm: async () => {
+        await requestWrapper(
+          () => deviceAPI.deleteDevice(record.id),
+          {
+            successMessage: '设备删除成功！',
+            showSuccessMessage: true,
+            onSuccess: () => {
+              actionRef.current?.reload();
+            },
+          }
+        );
+      },
+    });
   };
 
   // 批量删除
@@ -97,36 +104,41 @@ const DeviceList: React.FC = () => {
       return;
     }
 
-    try {
-      const response = await deviceAPI.batchDelete(selectedRowKeys as number[]);
-      if (response.code === 200) {
-        message.success('批量删除成功！');
-        setSelectedRowKeys([]);
-        actionRef.current?.reload();
-      } else {
-        message.error(response.message || '批量删除失败');
-      }
-    } catch (error) {
-      message.error('批量删除失败');
-    }
+    showDeleteConfirm({
+      title: '确认批量删除设备',
+      content: `确定要删除选中的 ${selectedRowKeys.length} 个设备吗？删除后无法恢复。`,
+      onConfirm: async () => {
+        await batchRequestWrapper(
+          selectedRowKeys as number[],
+          (deviceId) => deviceAPI.deleteDevice(deviceId),
+          {
+            successMessage: '批量删除成功！',
+            showSuccessMessage: true,
+            onSuccess: () => {
+              setSelectedRowKeys([]);
+              actionRef.current?.reload();
+            },
+          }
+        );
+      },
+    });
   };
 
   // 切换设备状态
   const toggleDeviceStatus = async (record: Device, enabled: boolean) => {
-    try {
-      const response = await deviceAPI.updateDevice(record.id, {
+    await requestWrapper(
+      () => deviceAPI.updateDevice(record.id, {
         ...record,
         enabled,
-      });
-      if (response.code === 200) {
-        message.success(`设备已${enabled ? '启用' : '禁用'}`);
-        actionRef.current?.reload();
-      } else {
-        message.error(response.message || '操作失败');
+      }),
+      {
+        successMessage: `设备已${enabled ? '启用' : '禁用'}`,
+        showSuccessMessage: true,
+        onSuccess: () => {
+          actionRef.current?.reload();
+        },
       }
-    } catch (error) {
-      message.error('操作失败');
-    }
+    );
   };
 
   // 查看设备详情
@@ -294,16 +306,9 @@ const DeviceList: React.FC = () => {
           <Tooltip title="配置">
             <Button type="link" icon={<SettingOutlined />} onClick={() => handleConfig(record)} />
           </Tooltip>
-          <Popconfirm
-            title="确定要删除这个设备吗？"
-            onConfirm={() => handleDelete(record)}
-            okText="确定"
-            cancelText="取消"
-          >
-            <Tooltip title="删除">
-              <Button type="link" danger icon={<DeleteOutlined />} />
-            </Tooltip>
-          </Popconfirm>
+          <Tooltip title="删除">
+            <Button type="link" danger icon={<DeleteOutlined />} onClick={() => handleDelete(record)} />
+          </Tooltip>
         </Space>
       ),
     },
