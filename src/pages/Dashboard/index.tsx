@@ -1,59 +1,71 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Card,
-  Col,
   Row,
+  Col,
   Statistic,
-  Table,
-  Tag,
-  Typography,
-  Space,
-  Button,
+  Badge,
   Alert,
-  Progress,
+  Button,
   List,
   Avatar,
-  Badge,
+  Space,
+  Tag,
+  Typography,
+  message,
 } from 'antd';
 import {
-  ArrowUpOutlined,
-  ArrowDownOutlined,
-  EyeOutlined,
   WarningOutlined,
   CheckCircleOutlined,
-  CloseCircleOutlined,
   ExclamationCircleOutlined,
+  ClockCircleOutlined,
+  SafetyOutlined,
+  AlertOutlined,
 } from '@ant-design/icons';
 import { PageContainer } from '@ant-design/pro-components';
-import { Line, Column, Pie } from '@ant-design/plots';
-import { dashboardAPI, eventAPI } from '@/services/api';
+import { Pie, Line } from '@ant-design/plots';
 import { history } from '@umijs/max';
-import type { DashboardStats, SecurityEvent } from '@/services/api';
+import { dashboardAPI, eventAPI, analyticsAPI } from '@/services/guardian/api';
+import type { DashboardStats, SecurityEvent } from '@/services/guardian/api';
 
 const { Title, Text } = Typography;
 
 const Dashboard: React.FC = () => {
-  const [loading, setLoading] = useState(true);
-  const [stats, setStats] = useState<DashboardStats | null>(null);
-  const [recentEvents, setRecentEvents] = useState<SecurityEvent[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [stats, setStats] = useState<any>(null);
+  const [recentEvents, setRecentEvents] = useState<any[]>([]);
+  const [deviceStats, setDeviceStats] = useState<any>(null);
+  const [eventTrends, setEventTrends] = useState<any>(null);
 
   // 获取仪表板数据
   const fetchDashboardData = async () => {
+    setLoading(true);
     try {
-      setLoading(true);
-      const [statsResponse, eventsResponse] = await Promise.all([
+      const [statsResponse, eventsResponse, deviceStatsResponse, eventTrendsResponse] = await Promise.all([
         dashboardAPI.getStats(),
-        eventAPI.getEvents({ page: 1, pageSize: 10, status: 'pending' }),
+        eventAPI.getEvents(undefined, 0, 1, 5), // 获取未处理的事件
+        analyticsAPI.getDeviceStats(),
+        analyticsAPI.getEventTrends({ granularity: 'day' }),
       ]);
 
-      if (statsResponse.code === 200) {
+      if (statsResponse.success) {
         setStats(statsResponse.data);
       }
-      if (eventsResponse.code === 200) {
-        setRecentEvents(eventsResponse.data);
+
+      if (eventsResponse.success) {
+        setRecentEvents(eventsResponse.data.events || []);
+      }
+
+      if (deviceStatsResponse.success) {
+        setDeviceStats(deviceStatsResponse.data);
+      }
+
+      if (eventTrendsResponse.success) {
+        setEventTrends(eventTrendsResponse.data);
       }
     } catch (error) {
-      console.error('Failed to fetch dashboard data:', error);
+      console.error('获取仪表板数据失败:', error);
+      message.error('获取仪表板数据失败');
     } finally {
       setLoading(false);
     }
@@ -61,44 +73,52 @@ const Dashboard: React.FC = () => {
 
   useEffect(() => {
     fetchDashboardData();
-    // 设置定时刷新
-    const interval = setInterval(fetchDashboardData, 30000); // 30秒刷新一次
+    // 设置定时刷新（30秒）
+    const interval = setInterval(fetchDashboardData, 30000);
     return () => clearInterval(interval);
   }, []);
 
   // 事件级别颜色映射
-  const getEventLevelColor = (level: string) => {
+  const getEventLevelColor = (level: number) => {
     const colors = {
-      low: 'blue',
-      medium: 'orange',
-      high: 'red',
-      critical: 'purple',
+      1: '#52c41a',   // 低
+      2: '#faad14',   // 中
+      3: '#ff4d4f',   // 高
+      4: '#722ed1',   // 紧急
     };
-    return colors[level as keyof typeof colors] || 'default';
+    return colors[level as keyof typeof colors] || '#1890ff';
   };
 
-  // 事件状态图标映射
-  const getEventStatusIcon = (status: string) => {
+  // 事件状态图标
+  const getEventStatusIcon = (status: number) => {
     const icons = {
-      pending: <ExclamationCircleOutlined style={{ color: '#faad14' }} />,
-      processing: <EyeOutlined style={{ color: '#1890ff' }} />,
-      resolved: <CheckCircleOutlined style={{ color: '#52c41a' }} />,
-      ignored: <CloseCircleOutlined style={{ color: '#d9d9d9' }} />,
+      0: <ExclamationCircleOutlined />, // 未处理
+      1: <CheckCircleOutlined />,       // 已处理
+      2: <ClockCircleOutlined />,       // 处理中
     };
-    return icons[status as keyof typeof icons] || null;
+    return icons[status as keyof typeof icons] || <ExclamationCircleOutlined />;
+  };
+
+  // 获取事件级别文本
+  const getEventLevelText = (level: number) => {
+    const texts = {
+      1: '低',
+      2: '中',
+      3: '高',
+      4: '紧急',
+    };
+    return texts[level as keyof typeof texts] || '未知';
   };
 
   // 设备状态饼图配置
   const deviceStatusConfig = {
-    data: stats
-      ? [
-          { type: '在线', value: stats.deviceStatusChart.online },
-          { type: '离线', value: stats.deviceStatusChart.offline },
-          { type: '故障', value: stats.deviceStatusChart.error },
-        ]
-      : [],
+    data: deviceStats ? [
+      { name: '在线', value: deviceStats.online },
+      { name: '离线', value: deviceStats.offline },
+      { name: '告警', value: deviceStats.warning },
+    ] : [],
     angleField: 'value',
-    colorField: 'type',
+    colorField: 'name',
     radius: 0.8,
     color: ['#52c41a', '#faad14', '#ff4d4f'],
     label: {
@@ -110,12 +130,14 @@ const Dashboard: React.FC = () => {
 
   // 事件趋势图配置
   const eventTrendConfig = {
-    data: stats?.eventTrendChart || [],
+    data: eventTrends?.dates?.map((date: string, index: number) => ({
+      date,
+      count: eventTrends.counts[index] || 0,
+    })) || [],
     xField: 'date',
     yField: 'count',
-    seriesField: 'level',
-    color: ['#1890ff', '#faad14', '#ff4d4f', '#722ed1'],
     smooth: true,
+    color: '#1890ff',
     animation: {
       appear: {
         animation: 'path-in',
@@ -141,7 +163,7 @@ const Dashboard: React.FC = () => {
             <Statistic
               title="守护圈总数"
               value={stats?.totalCircles || 0}
-              prefix={<Badge status="processing" />}
+              prefix={<SafetyOutlined />}
               valueStyle={{ color: '#1890ff' }}
             />
           </Card>
@@ -160,9 +182,9 @@ const Dashboard: React.FC = () => {
         <Col xs={24} sm={12} lg={6}>
           <Card>
             <Statistic
-              title="事件总数"
-              value={stats?.totalEvents || 0}
-              prefix={<Badge status="warning" />}
+              title="今日事件"
+              value={stats?.todayEvents || 0}
+              prefix={<AlertOutlined />}
               valueStyle={{ color: '#faad14' }}
             />
           </Card>
@@ -171,18 +193,18 @@ const Dashboard: React.FC = () => {
           <Card>
             <Statistic
               title="待处理事件"
-              value={stats?.pendingEvents || 0}
+              value={stats?.unhandledEvents || 0}
               prefix={<WarningOutlined />}
-              valueStyle={{ color: stats?.pendingEvents ? '#ff4d4f' : '#52c41a' }}
+              valueStyle={{ color: (stats?.unhandledEvents || 0) > 0 ? '#ff4d4f' : '#52c41a' }}
             />
           </Card>
         </Col>
       </Row>
 
       {/* 警告信息 */}
-      {stats && stats.pendingEvents > 0 && (
+      {stats && (stats.unhandledEvents || 0) > 0 && (
         <Alert
-          message={`您有 ${stats.pendingEvents} 个待处理的安全事件`}
+          message={`您有 ${stats.unhandledEvents} 个待处理的安全事件`}
           description="请及时查看并处理这些事件以确保系统安全"
           type="warning"
           showIcon
@@ -190,7 +212,7 @@ const Dashboard: React.FC = () => {
             <Button
               size="small"
               type="primary"
-              onClick={() => history.push('/events?status=pending')}
+              onClick={() => history.push('/events?status=0')}
             >
               立即查看
             </Button>
@@ -203,7 +225,7 @@ const Dashboard: React.FC = () => {
         {/* 设备状态分布 */}
         <Col xs={24} lg={12}>
           <Card title="设备状态分布" loading={loading}>
-            {stats && (
+            {deviceStats && deviceStats.total > 0 ? (
               <>
                 <Pie {...deviceStatusConfig} height={300} />
                 <Row gutter={16} style={{ marginTop: 16 }}>
@@ -211,8 +233,8 @@ const Dashboard: React.FC = () => {
                     <Statistic
                       title="在线率"
                       value={
-                        stats.totalDevices > 0
-                          ? ((stats.onlineDevices / stats.totalDevices) * 100).toFixed(1)
+                        deviceStats.total > 0
+                          ? ((deviceStats.online / deviceStats.total) * 100).toFixed(1)
                           : 0
                       }
                       suffix="%"
@@ -222,19 +244,23 @@ const Dashboard: React.FC = () => {
                   <Col span={8}>
                     <Statistic
                       title="离线设备"
-                      value={stats.offlineDevices}
+                      value={deviceStats.offline || 0}
                       valueStyle={{ color: '#faad14' }}
                     />
                   </Col>
                   <Col span={8}>
                     <Statistic
-                      title="故障设备"
-                      value={stats.deviceStatusChart.error}
+                      title="告警设备"
+                      value={deviceStats.warning || 0}
                       valueStyle={{ color: '#ff4d4f' }}
                     />
                   </Col>
                 </Row>
               </>
+            ) : (
+              <div style={{ textAlign: 'center', padding: '60px 0' }}>
+                <Text type="secondary">暂无设备数据</Text>
+              </div>
             )}
           </Card>
         </Col>
@@ -242,11 +268,11 @@ const Dashboard: React.FC = () => {
         {/* 事件趋势 */}
         <Col xs={24} lg={12}>
           <Card title="事件趋势" loading={loading}>
-            {stats && stats.eventTrendChart.length > 0 ? (
+            {eventTrends && eventTrends.dates && eventTrends.dates.length > 0 ? (
               <Line {...eventTrendConfig} height={300} />
             ) : (
               <div style={{ textAlign: 'center', padding: '60px 0' }}>
-                <Text type="secondary">暂无事件数据</Text>
+                <Text type="secondary">暂无事件趋势数据</Text>
               </div>
             )}
           </Card>
@@ -291,9 +317,9 @@ const Dashboard: React.FC = () => {
                       }
                       title={
                         <Space>
-                          <span>{item.title}</span>
+                          <span>{item.event_type || '系统事件'}</span>
                           <Tag color={getEventLevelColor(item.level)}>
-                            {item.level.toUpperCase()}
+                            {getEventLevelText(item.level)}
                           </Tag>
                         </Space>
                       }
@@ -301,7 +327,7 @@ const Dashboard: React.FC = () => {
                         <Space direction="vertical" size={4}>
                           <Text type="secondary">{item.description}</Text>
                           <Text type="secondary" style={{ fontSize: '12px' }}>
-                            {new Date(item.createdAt).toLocaleString()}
+                            {item.device_name || '未知设备'} • {new Date(item.create_time).toLocaleString()}
                           </Text>
                         </Space>
                       }

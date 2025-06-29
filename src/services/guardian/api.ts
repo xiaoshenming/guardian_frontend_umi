@@ -10,28 +10,31 @@ interface BaseResponse<T = any> {
 
 // 用户相关类型
 interface User {
-  id: string;
+  id: number;
+  uid?: number;
   username: string;
   email: string;
-  phone?: string;
-  role: 'admin' | 'user' | 'guardian';
-  avatar?: string;
-  createdAt: string;
-  updatedAt: string;
+  phone_number?: string;
+  role: number; // 0-无权, 1-普通用户, 2-管理员, 3-超管
+  avatar_url?: string;
+  gender?: string;
+  status?: string;
+  last_login_time?: string;
+  create_time: string;
+  update_time?: string;
 }
 
 interface LoginParams {
-  identifier: string; // 用户名、邮箱或手机号
+  name: string; // 用户名、邮箱或手机号
   password: string;
-  remember?: boolean;
+  deviceType?: string;
 }
 
 interface RegisterParams {
-  username: string;
+  name: string;
   email: string;
-  phone?: string;
   password: string;
-  confirmPassword: string;
+  code: string; // 验证码
 }
 
 // 守护圈相关类型
@@ -42,9 +45,9 @@ interface Circle {
   circle_code: string;
   creator_uid: number;
   creator_name?: string;
-  member_role: number;
+  member_role?: number; // 0:圈主/管理员, 1:普通成员/监护人, 2:被关怀者
   member_alias?: string;
-  alert_level?: number;
+  alert_level?: number; // 1:所有, 2:高危, 0:不接收
   create_time: string;
   update_time?: string;
 }
@@ -55,54 +58,89 @@ interface CreateCircleParams {
 }
 
 interface CircleMember {
-  id: string;
-  userId: string;
-  circleId: string;
-  role: 'admin' | 'member' | 'guardian';
-  user: User;
-  joinedAt: string;
+  id: number;
+  circle_id: number;
+  uid: number;
+  member_role: number;
+  member_alias?: string;
+  alert_level: number;
+  username?: string;
+  email?: string;
+  avatar_url?: string;
+  create_time: string;
 }
 
 // 设备相关类型
 interface Device {
-  id: string;
-  name: string;
-  type: 'smartphone' | 'smartwatch' | 'tracker';
-  model?: string;
-  circleId: string;
-  userId: string;
-  status: 'online' | 'offline' | 'warning';
-  lastSeen: string;
-  location?: {
-    latitude: number;
-    longitude: number;
-    address?: string;
-  };
-  battery?: number;
-  createdAt: string;
-  updatedAt: string;
+  id: number;
+  device_sn: string;
+  device_name: string;
+  device_model: string;
+  circle_id: number;
+  bound_by_uid: number;
+  device_status: number; // 0:未激活, 1:在线, 2:离线, 3:故障
+  firmware_version?: string;
+  config?: any;
+  last_heartbeat?: string;
+  create_time: string;
+  update_time?: string;
+  circle_name?: string;
 }
 
 interface BindDeviceParams {
-  circleId: string;
-  deviceCode: string;
+  circleId: number;
+  deviceSn: string;
   deviceName?: string;
 }
 
 // 事件相关类型
 interface Event {
-  id: string;
-  type: 'location' | 'battery' | 'emergency' | 'offline';
-  level: 'info' | 'warning' | 'danger';
-  title: string;
-  description: string;
-  deviceId: string;
-  circleId: string;
-  userId: string;
-  data?: any;
-  handled: boolean;
-  createdAt: string;
-  updatedAt: string;
+  id: number;
+  device_id: number;
+  circle_id: number;
+  event_type: string; // fall_detection, gesture_wave等
+  event_data?: any;
+  event_time: string;
+  create_time: string;
+  device_name?: string;
+  circle_name?: string;
+}
+
+// 告警相关类型
+interface Alert {
+  id: number;
+  event_id: number;
+  circle_id: number;
+  alert_level: number; // 1:紧急, 2:重要, 3:普通
+  alert_content: string;
+  status: number; // 0:待处理, 1:已通知, 2:已确认, 3:已忽略
+  acknowledged_by_uid?: number;
+  acknowledged_time?: string;
+  create_time: string;
+  device_name?: string;
+  circle_name?: string;
+}
+
+// 统计数据类型
+interface DashboardStats {
+  totalCircles: number;
+  totalDevices: number;
+  onlineDevices: number;
+  urgentAlerts: number;
+  todayEvents: number;
+}
+
+interface DeviceStats {
+  online: number;
+  offline: number;
+  error: number;
+  unactivated: number;
+}
+
+interface EventTrends {
+  dates: string[];
+  counts: number[];
+  types: Record<string, number[]>;
 }
 
 // 认证相关API
@@ -117,7 +155,7 @@ export const authAPI = {
 
   // 用户注册
   register: (params: RegisterParams) => {
-    return request<BaseResponse<{ user: User; token: string }>>('/api/auth/register', {
+    return request<BaseResponse<{ userId: number; loginId: number }>>('/api/auth/register', {
       method: 'POST',
       data: params,
     });
@@ -132,7 +170,7 @@ export const authAPI = {
 
   // 获取权限码
   getPermissions: () => {
-    return request<BaseResponse<{ permissions: string[] }>>('/api/auth/permissions', {
+    return request<BaseResponse<string[]>>('/api/auth/codes', {
       method: 'GET',
     });
   },
@@ -141,6 +179,14 @@ export const authAPI = {
   logout: () => {
     return request<BaseResponse>('/api/auth/logout', {
       method: 'POST',
+    });
+  },
+
+  // 发送验证码
+  sendVerificationCode: (email: string) => {
+    return request<BaseResponse>('/api/email/send', {
+      method: 'POST',
+      data: { email, type: 1 },
     });
   },
 };
@@ -156,36 +202,36 @@ export const circleAPI = {
 
   // 创建守护圈
   createCircle: (params: CreateCircleParams) => {
-    return request<BaseResponse<Circle>>('/api/circle/create', {
+    return request<BaseResponse<{ circleId: number; circleName: string; circleCode: string; description?: string }>>('/api/circle/create', {
       method: 'POST',
       data: params,
     });
   },
 
   // 通过邀请码加入守护圈
-  joinCircle: (inviteCode: string) => {
-    return request<BaseResponse<Circle>>('/api/circle/join', {
+  joinCircle: (circleCode: string, memberAlias?: string) => {
+    return request<BaseResponse<{ circleId: number; circleName: string }>>('/api/circle/join', {
       method: 'POST',
-      data: { inviteCode },
+      data: { circleCode, memberAlias },
     });
   },
 
   // 获取守护圈详情
-  getCircleDetail: (circleId: string) => {
+  getCircleDetail: (circleId: number) => {
     return request<BaseResponse<Circle>>(`/api/circle/${circleId}`, {
       method: 'GET',
     });
   },
 
   // 获取守护圈成员列表
-  getCircleMembers: (circleId: string) => {
+  getCircleMembers: (circleId: number) => {
     return request<BaseResponse<CircleMember[]>>(`/api/circle/${circleId}/members`, {
       method: 'GET',
     });
   },
 
   // 更新守护圈信息
-  updateCircle: (circleId: string, params: Partial<CreateCircleParams>) => {
+  updateCircle: (circleId: number, params: { circleName?: string; description?: string }) => {
     return request<BaseResponse<Circle>>(`/api/circle/${circleId}`, {
       method: 'PUT',
       data: params,
@@ -193,39 +239,54 @@ export const circleAPI = {
   },
 
   // 删除守护圈
-  deleteCircle: (circleId: string) => {
+  deleteCircle: (circleId: number) => {
     return request<BaseResponse>(`/api/circle/${circleId}`, {
       method: 'DELETE',
+    });
+  },
+
+  // 移除成员
+  removeMember: (circleId: number, memberId: number) => {
+    return request<BaseResponse>(`/api/circle/${circleId}/members/${memberId}`, {
+      method: 'DELETE',
+    });
+  },
+
+  // 更新成员角色
+  updateMemberRole: (circleId: number, memberId: number, memberRole: number, alertLevel?: number) => {
+    return request<BaseResponse>(`/api/circle/${circleId}/members/${memberId}`, {
+      method: 'PUT',
+      data: { memberRole, alertLevel },
     });
   },
 };
 
 // 设备相关API
 export const deviceAPI = {
-  // 绑定设备到守护圈
+  // 绑定设备
   bindDevice: (params: BindDeviceParams) => {
-    return request<BaseResponse<Device>>('/api/device/bind', {
+    return request<BaseResponse<{ deviceId: number; deviceName: string; deviceType: string }>>('/api/device/bind', {
       method: 'POST',
       data: params,
     });
   },
 
   // 获取守护圈设备列表
-  getCircleDevices: (circleId: string) => {
-    return request<BaseResponse<Device[]>>(`/api/device/circle/${circleId}`, {
+  getDevices: (circleId: number) => {
+    return request<BaseResponse<Device[]>>(`/api/device/list/${circleId}`, {
       method: 'GET',
     });
   },
 
   // 获取设备详情
-  getDeviceDetail: (deviceId: string) => {
+  getDeviceDetail: (deviceId: number) => {
     return request<BaseResponse<Device>>(`/api/device/${deviceId}`, {
       method: 'GET',
     });
   },
 
   // 更新设备信息
-  updateDevice: (deviceId: string, params: Partial<Device>) => {
+  updateDevice: (deviceId: number, params: { deviceName?: string; deviceAlias?: string; location?: string; alertLevel?: number }) => {
     return request<BaseResponse<Device>>(`/api/device/${deviceId}`, {
       method: 'PUT',
       data: params,
@@ -233,9 +294,24 @@ export const deviceAPI = {
   },
 
   // 解绑设备
-  unbindDevice: (deviceId: string) => {
+  unbindDevice: (deviceId: number) => {
     return request<BaseResponse>(`/api/device/${deviceId}`, {
       method: 'DELETE',
+    });
+  },
+
+  // 获取设备实时数据
+  getDeviceRealtime: (deviceId: number) => {
+    return request<BaseResponse<any>>(`/api/device/${deviceId}/realtime`, {
+      method: 'GET',
+    });
+  },
+
+  // 获取设备历史数据
+  getDeviceHistory: (deviceId: number, startTime?: string, endTime?: string) => {
+    return request<BaseResponse<any[]>>(`/api/device/${deviceId}/history`, {
+      method: 'GET',
+      params: { startTime, endTime },
     });
   },
 };
@@ -243,38 +319,49 @@ export const deviceAPI = {
 // 事件相关API
 export const eventAPI = {
   // 获取事件列表
-  getEvents: (params?: {
-    circleId?: string;
-    deviceId?: string;
-    type?: string;
-    level?: string;
-    page?: number;
-    pageSize?: number;
-  }) => {
-    return request<BaseResponse<{ events: Event[]; total: number }>>('/api/event/list', {
+  getEvents: (circleId?: number, status?: number, page?: number, limit?: number) => {
+    return request<BaseResponse<{ events: Event[]; total: number; page: number; limit: number }>>('/api/event/list', {
       method: 'GET',
-      params,
+      params: { circleId, status, page, limit },
     });
   },
 
   // 获取事件详情
-  getEventDetail: (eventId: string) => {
+  getEventDetail: (eventId: number) => {
     return request<BaseResponse<Event>>(`/api/event/${eventId}`, {
       method: 'GET',
     });
   },
 
   // 标记事件为已处理
-  handleEvent: (eventId: string) => {
+  markEventHandled: (eventId: number, handlerNote?: string) => {
     return request<BaseResponse>(`/api/event/${eventId}/handle`, {
       method: 'POST',
+      data: { handlerNote },
     });
   },
 
   // 获取未处理告警数量
-  getUnhandledCount: () => {
+  getUnhandledCount: (circleId?: number) => {
     return request<BaseResponse<{ count: number }>>('/api/event/unhandled-count', {
       method: 'GET',
+      params: { circleId },
+    });
+  },
+
+  // 批量处理事件
+  batchHandleEvents: (eventIds: number[], handlerNote?: string) => {
+    return request<BaseResponse>('/api/event/batch/handle', {
+      method: 'POST',
+      data: { eventIds, handlerNote },
+    });
+  },
+
+  // 获取事件统计
+  getEventStats: (circleId?: number, startTime?: string, endTime?: string) => {
+    return request<BaseResponse<any>>('/api/event/stats', {
+      method: 'GET',
+      params: { circleId, startTime, endTime },
     });
   },
 };
@@ -282,7 +369,7 @@ export const eventAPI = {
 // 用户相关API
 export const userAPI = {
   // 更新用户信息
-  updateProfile: (params: Partial<User>) => {
+  updateProfile: (params: { username?: string; email?: string; phone?: string; realName?: string; avatar?: string }) => {
     return request<BaseResponse<User>>('/api/user/profile', {
       method: 'PUT',
       data: params,
@@ -290,13 +377,9 @@ export const userAPI = {
   },
 
   // 修改密码
-  changePassword: (params: {
-    oldPassword: string;
-    newPassword: string;
-    confirmPassword: string;
-  }) => {
-    return request<BaseResponse>('/api/user/change-password', {
-      method: 'POST',
+  changePassword: (params: { oldPassword: string; newPassword: string; verificationCode?: string }) => {
+    return request<BaseResponse>('/api/user/password', {
+      method: 'PUT',
       data: params,
     });
   },
@@ -305,56 +388,78 @@ export const userAPI = {
   uploadAvatar: (file: File) => {
     const formData = new FormData();
     formData.append('avatar', file);
-    return request<BaseResponse<{ url: string }>>('/api/user/avatar', {
+    return request<BaseResponse<{ avatarUrl: string }>>('/api/user/avatar', {
       method: 'POST',
       data: formData,
     });
   },
-};
 
-// 统计分析API
-export const analyticsAPI = {
-  // 获取仪表板统计数据
-  getDashboardStats: () => {
-    return request<
-      BaseResponse<{
-        totalCircles: number;
-        totalDevices: number;
-        onlineDevices: number;
-        todayEvents: number;
-        recentEvents: Event[];
-      }>
-    >('/api/analytics/dashboard', {
+  // 获取用户详情
+  getUserDetail: (userId: number) => {
+    return request<BaseResponse<User>>(`/api/user/${userId}`, {
       method: 'GET',
     });
   },
 
-  // 获取设备状态统计
-  getDeviceStats: (circleId?: string) => {
-    return request<
-      BaseResponse<{
-        online: number;
-        offline: number;
-        warning: number;
-        batteryLow: number;
-      }>
-    >('/api/analytics/device-stats', {
+  // 重置密码
+  resetPassword: (params: { email: string; verificationCode: string; newPassword: string }) => {
+    return request<BaseResponse>('/api/user/reset-password', {
+      method: 'POST',
+      data: params,
+    });
+  },
+};
+
+// 仪表板相关API
+export const dashboardAPI = {
+  // 获取仪表板统计数据
+  getStats: (circleId?: number) => {
+    return request<BaseResponse<DashboardStats>>('/api/dashboard/stats', {
       method: 'GET',
       params: { circleId },
     });
   },
 
+  // 获取实时数据
+  getRealtime: (circleId?: number) => {
+    return request<BaseResponse<any>>('/api/dashboard/realtime', {
+      method: 'GET',
+      params: { circleId },
+    });
+  },
+};
+
+// 分析统计相关API
+export const analyticsAPI = {
+  // 获取设备状态统计
+  getDeviceStats: (circleId?: number, timeRange?: string) => {
+    return request<BaseResponse<DeviceStats>>('/api/analytics/device-stats', {
+      method: 'GET',
+      params: { circleId, timeRange },
+    });
+  },
+
   // 获取事件趋势数据
-  getEventTrends: (params: { circleId?: string; days?: number }) => {
-    return request<
-      BaseResponse<{
-        dates: string[];
-        counts: number[];
-        types: Record<string, number[]>;
-      }>
-    >('/api/analytics/event-trends', {
+  getEventTrends: (params?: { startDate?: string; endDate?: string; circleId?: number; granularity?: string }) => {
+    return request<BaseResponse<EventTrends>>('/api/analytics/event-trends', {
       method: 'GET',
       params,
+    });
+  },
+
+  // 获取用户活跃度统计
+  getUserActivity: (circleId?: number, timeRange?: string) => {
+    return request<BaseResponse<any>>('/api/analytics/user-activity', {
+      method: 'GET',
+      params: { circleId, timeRange },
+    });
+  },
+
+  // 获取设备健康度报告
+  getDeviceHealth: (circleId?: number) => {
+    return request<BaseResponse<any>>('/api/analytics/device-health', {
+      method: 'GET',
+      params: { circleId },
     });
   },
 };
@@ -362,15 +467,15 @@ export const analyticsAPI = {
 // 管理员API
 export const adminAPI = {
   // 获取所有用户
-  getUsers: (params?: { page?: number; pageSize?: number; keyword?: string }) => {
-    return request<BaseResponse<{ users: User[]; total: number }>>('/api/admin/users', {
+  getAllUsers: (params?: { page?: number; limit?: number; keyword?: string; role?: number; status?: number }) => {
+    return request<BaseResponse<{ users: User[]; total: number; page: number; limit: number }>>('/api/admin/users', {
       method: 'GET',
       params,
     });
   },
 
   // 更新用户角色
-  updateUserRole: (userId: string, role: string) => {
+  updateUserRole: (userId: number, role: number) => {
     return request<BaseResponse>(`/api/admin/users/${userId}/role`, {
       method: 'PUT',
       data: { role },
@@ -378,36 +483,40 @@ export const adminAPI = {
   },
 
   // 禁用/启用用户
-  toggleUserStatus: (userId: string, enabled: boolean) => {
+  toggleUserStatus: (userId: number, status: number) => {
     return request<BaseResponse>(`/api/admin/users/${userId}/status`, {
       method: 'PUT',
-      data: { enabled },
+      data: { status },
     });
   },
 
   // 获取系统日志
-  getSystemLogs: (params?: {
-    page?: number;
-    pageSize?: number;
-    level?: string;
-    startDate?: string;
-    endDate?: string;
-  }) => {
-    return request<
-      BaseResponse<{
-        logs: Array<{
-          id: string;
-          level: string;
-          message: string;
-          timestamp: string;
-          userId?: string;
-          ip?: string;
-        }>;
-        total: number;
-      }>
-    >('/api/admin/logs', {
+  getSystemLogs: (params?: { page?: number; limit?: number; level?: string; startTime?: string; endTime?: string }) => {
+    return request<BaseResponse<{ logs: any[]; total: number; page: number; limit: number }>>('/api/admin/logs', {
       method: 'GET',
       params,
+    });
+  },
+
+  // 获取系统统计
+  getSystemStats: () => {
+    return request<BaseResponse<any>>('/api/admin/stats', {
+      method: 'GET',
+    });
+  },
+
+  // 删除用户
+  deleteUser: (userId: number) => {
+    return request<BaseResponse>(`/api/admin/users/${userId}`, {
+      method: 'DELETE',
+    });
+  },
+
+  // 重置用户密码
+  resetUserPassword: (userId: number, newPassword: string) => {
+    return request<BaseResponse>(`/api/admin/users/${userId}/reset-password`, {
+      method: 'POST',
+      data: { newPassword },
     });
   },
 };
@@ -419,6 +528,7 @@ export default {
   device: deviceAPI,
   event: eventAPI,
   user: userAPI,
+  dashboard: dashboardAPI,
   analytics: analyticsAPI,
   admin: adminAPI,
 };
