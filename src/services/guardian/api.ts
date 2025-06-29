@@ -318,52 +318,7 @@ export const deviceAPI = {
 
 // 事件相关API
 export const eventAPI = {
-  // 获取事件列表
-  getEvents: (circleId?: number, status?: number, page?: number, limit?: number) => {
-    return request<BaseResponse<{ events: Event[]; total: number; page: number; limit: number }>>('/api/event/list', {
-      method: 'GET',
-      params: { circleId, status, page, limit },
-    });
-  },
-
-  // 获取事件详情
-  getEventDetail: (eventId: number) => {
-    return request<BaseResponse<Event>>(`/api/event/${eventId}`, {
-      method: 'GET',
-    });
-  },
-
-  // 标记事件为已处理
-  markEventHandled: (eventId: number, handlerNote?: string) => {
-    return request<BaseResponse>(`/api/event/${eventId}/handle`, {
-      method: 'POST',
-      data: { handlerNote },
-    });
-  },
-
-  // 获取未处理告警数量
-  getUnhandledCount: (circleId?: number) => {
-    return request<BaseResponse<{ count: number }>>('/api/event/unhandled-count', {
-      method: 'GET',
-      params: { circleId },
-    });
-  },
-
-  // 批量处理事件
-  batchHandleEvents: (eventIds: number[], handlerNote?: string) => {
-    return request<BaseResponse>('/api/event/batch/handle', {
-      method: 'POST',
-      data: { eventIds, handlerNote },
-    });
-  },
-
-  // 获取事件统计
-  getEventStats: (circleId?: number, startTime?: string, endTime?: string) => {
-    return request<BaseResponse<any>>('/api/event/stats', {
-      method: 'GET',
-      params: { circleId, startTime, endTime },
-    });
-  },
+  // 事件相关API已迁移到 services/api.ts 中的 eventAPI
 };
 
 // 用户相关API
